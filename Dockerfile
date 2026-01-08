@@ -19,3 +19,4 @@ CMD bash -lc "\
     --gpu-memory-utilization 0.9 \
     > /tmp/vllm.log 2>&1 & \
   exec python -u /src/handler.py"
+
