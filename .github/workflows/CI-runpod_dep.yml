@@ -23,7 +23,11 @@ jobs:
           echo "Fetching the current runpod version from requirements.txt..."
           
           # Get current version, allowing both == and ~= in the search pattern
-          current_version=$(grep -oP 'runpod[~=]{1,2}\K[^"]+' ./builder/requirements.txt)
+          current_version=$(grep -oP 'runpod[~=]{1,2}\K[^"]+' ./builder/requirements.txt || true)
+          if [ -z "$current_version" ]; then
+              echo "ERROR: runpod package not found in ./builder/requirements.txt"
+              exit 1
+          fi
           echo "Current version: $current_version"
 
           # Extract major and minor from current version
