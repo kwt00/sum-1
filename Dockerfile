@@ -1,7 +1,13 @@
 FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
 
-# Install model server, RunPod SDK, and brotli support (needed for br encoding)
-RUN pip install --no-cache-dir vllm runpod requests brotli
+# Install model server, RunPod SDK, and brotli decoders (br responses)
+RUN pip install --no-cache-dir \
+    vllm \
+    runpod \
+    requests \
+    brotli \
+    brotlicffi \
+    "aiohttp[speedups]"
 
 # Copy your handler
 COPY handler.py /src/handler.py
