@@ -24,20 +24,20 @@ jobs:
           
           # Get current version (supports == or >=/<= style)
           current_version=$(python3 - <<'PY'
-import re, sys, pathlib
-req_path = pathlib.Path("builder") / "requirements.txt"
-text = req_path.read_text()
-pat = re.compile(r"^runpod[^\\n]*", re.MULTILINE)
-match = pat.search(text)
-if not match:
-    sys.exit("ERROR: runpod package not found in ./builder/requirements.txt")
-line = match.group(0)
-# Extract first version-ish token after runpod and any operators
-mver = re.search(r"runpod[^0-9]*([0-9][^,\\s]*)", line)
-if not mver:
-    sys.exit("ERROR: could not parse runpod version from line: " + line)
-print(mver.group(1))
-PY
+            import re, sys, pathlib
+            req_path = pathlib.Path("builder") / "requirements.txt"
+            text = req_path.read_text()
+            pat = re.compile(r"^runpod[^\n]*", re.MULTILINE)
+            match = pat.search(text)
+            if not match:
+                sys.exit("ERROR: runpod package not found in ./builder/requirements.txt")
+            line = match.group(0)
+            # Extract first version-ish token after runpod and any operators
+            mver = re.search(r"runpod[^0-9]*([0-9][^,\\s]*)", line)
+            if not mver:
+                sys.exit("ERROR: could not parse runpod version from line: " + line)
+            print(mver.group(1))
+          PY
           )
           echo "Current version: $current_version"
 
