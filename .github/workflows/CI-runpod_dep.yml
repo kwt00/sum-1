@@ -38,7 +38,7 @@ if not mver:
     sys.exit("ERROR: could not parse runpod version from line: " + line)
 print(mver.group(1))
 PY
-)
+          )
           echo "Current version: $current_version"
 
           # Extract major and minor from current version
