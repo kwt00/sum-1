@@ -1,7 +1,7 @@
 FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
 
-# Install model server & RunPod
-RUN pip install --no-cache-dir vllm runpod requests
+# Install model server, RunPod SDK, and brotli support (needed for br encoding)
+RUN pip install --no-cache-dir vllm runpod requests brotli
 
 # Copy your handler
 COPY handler.py /src/handler.py
