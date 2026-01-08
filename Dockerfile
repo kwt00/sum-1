@@ -9,12 +9,13 @@ COPY handler.py /src/handler.py
 # Set working directory
 WORKDIR /src
 
-# Start vLLM in the background, then start the RunPod handler
-CMD python -m vllm.entrypoints.openai.api_server \
-        --model Qwen/Qwen3-0.6B \
-        --host 0.0.0.0 \
-        --port 8000 \
-        --tensor-parallel-size 1 \
-        --disable-log-requests \
-        --gpu-memory-utilization 0.9 \
-    & python /src/handler.py
+CMD bash -lc "\
+  python -m vllm.entrypoints.openai.api_server \
+    --model Qwen/Qwen3-0.6B \
+    --host 0.0.0.0 \
+    --port 8000 \
+    --tensor-parallel-size 1 \
+    --disable-log-requests \
+    --gpu-memory-utilization 0.9 \
+    > /tmp/vllm.log 2>&1 & \
+  exec python -u /src/handler.py"
