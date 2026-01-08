@@ -1,37 +1,50 @@
-FROM pytorch/pytorch:2.1.0-cuda12.1-cudnn8-runtime
+FROM nvidia/cuda:12.1.0-base-ubuntu22.04 
 
-# Install model server, RunPod SDK, and brotli decoders (br responses)
-RUN pip install --no-cache-dir \
-    vllm \
-    runpod \
-    requests \
-    brotli \
-    brotlicffi \
-    "aiohttp[speedups]"
+RUN apt-get update -y \
+    && apt-get install -y python3-pip
 
-# Unbuffered Python logs
-ENV PYTHONUNBUFFERED=1
+RUN ldconfig /usr/local/cuda-12.1/compat/
 
-# Copy your handler
-COPY handler.py /src/handler.py
+# Install Python dependencies
+COPY builder/requirements.txt /requirements.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    python3 -m pip install --upgrade pip && \
+    python3 -m pip install --upgrade -r /requirements.txt
 
-# Set working directory
-WORKDIR /src
+# Install vLLM (switching back to pip installs since issues that required building fork are fixed and space optimization is not as important since caching) and FlashInfer 
+RUN python3 -m pip install vllm==0.11.0 && \
+    python3 -m pip install flashinfer -i https://flashinfer.ai/whl/cu121/torch2.3
 
-CMD bash -lc "\
-  set -euxo pipefail; \
-  echo '[boot] starting vLLM'; \
-  python -m vllm.entrypoints.openai.api_server \
-    --model Qwen/Qwen3-0.6B \
-    --host 0.0.0.0 \
-    --port 8000 \
-    --tensor-parallel-size 1 \
-    --disable-log-requests \
-    --gpu-memory-utilization 0.9 \
-    > /tmp/vllm.log 2>&1 & \
-  VLLM_PID=$!; \
-  echo "[boot] vLLM pid ${VLLM_PID}"; \
-  tail -F /tmp/vllm.log & \
-  echo '[boot] starting handler'; \
-  exec python -u /src/handler.py"
+# Setup for Option 2: Building the Image with the Model included
+ARG MODEL_NAME=""
+ARG TOKENIZER_NAME=""
+ARG BASE_PATH="/runpod-volume"
+ARG QUANTIZATION=""
+ARG MODEL_REVISION=""
+ARG TOKENIZER_REVISION=""
 
+ENV MODEL_NAME=$MODEL_NAME \
+    MODEL_REVISION=$MODEL_REVISION \
+    TOKENIZER_NAME=$TOKENIZER_NAME \
+    TOKENIZER_REVISION=$TOKENIZER_REVISION \
+    BASE_PATH=$BASE_PATH \
+    QUANTIZATION=$QUANTIZATION \
+    HF_DATASETS_CACHE="${BASE_PATH}/huggingface-cache/datasets" \
+    HUGGINGFACE_HUB_CACHE="${BASE_PATH}/huggingface-cache/hub" \
+    HF_HOME="${BASE_PATH}/huggingface-cache/hub" \
+    HF_HUB_ENABLE_HF_TRANSFER=0 
+
+ENV PYTHONPATH="/:/vllm-workspace"
+
+
+COPY src /src
+RUN --mount=type=secret,id=HF_TOKEN,required=false \
+    if [ -f /run/secrets/HF_TOKEN ]; then \
+    export HF_TOKEN=$(cat /run/secrets/HF_TOKEN); \
+    fi && \
+    if [ -n "$MODEL_NAME" ]; then \
+    python3 /src/download_model.py; \
+    fi
+
+# Start the handler
+CMD ["python3", "/src/handler.py"]
