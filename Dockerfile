@@ -9,6 +9,9 @@ RUN pip install --no-cache-dir \
     brotlicffi \
     "aiohttp[speedups]"
 
+# Unbuffered Python logs
+ENV PYTHONUNBUFFERED=1
+
 # Copy your handler
 COPY handler.py /src/handler.py
 
@@ -16,6 +19,8 @@ COPY handler.py /src/handler.py
 WORKDIR /src
 
 CMD bash -lc "\
+  set -euxo pipefail; \
+  echo '[boot] starting vLLM'; \
   python -m vllm.entrypoints.openai.api_server \
     --model Qwen/Qwen3-0.6B \
     --host 0.0.0.0 \
@@ -24,5 +29,9 @@ CMD bash -lc "\
     --disable-log-requests \
     --gpu-memory-utilization 0.9 \
     > /tmp/vllm.log 2>&1 & \
+  VLLM_PID=$!; \
+  echo "[boot] vLLM pid ${VLLM_PID}"; \
+  tail -F /tmp/vllm.log & \
+  echo '[boot] starting handler'; \
   exec python -u /src/handler.py"
 
