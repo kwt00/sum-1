@@ -19,6 +19,7 @@ jobs:
 
       - name: Check for new package version and update
         run: |
+          sudo apt-get update && sudo apt-get install -y jq
           echo "Fetching the current runpod version from requirements.txt..."
           
           # Get current version, allowing both == and ~= in the search pattern
