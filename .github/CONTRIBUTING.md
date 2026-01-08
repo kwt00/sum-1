@@ -4,7 +4,7 @@
 
 ### Development Workflow
 
-1. **Feature Development**
+1. **Feature Development** 
 
    ```bash
    git checkout -b feature/your-feature-name
